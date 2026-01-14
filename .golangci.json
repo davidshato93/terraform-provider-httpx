@@ -1,0 +1,81 @@
+{
+  "formatters": {
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ]
+    }
+  },
+  "issues": {
+    "max-issues-per-linter": 0,
+    "max-same-issues": 0
+  },
+  "linters": {
+    "enable": [
+      "goconst",
+      "gosec",
+      "misspell",
+      "revive",
+      "unconvert",
+      "unparam"
+    ],
+    "exclusions": {
+      "generated": "lax",
+      "paths": [
+        "third_party$",
+        "builtin$",
+        "examples$"
+      ],
+      "presets": [
+        "comments",
+        "common-false-positives",
+        "legacy",
+        "std-error-handling"
+      ],
+      "rules": [
+        {
+          "linters": [
+            "errcheck",
+            "goconst",
+            "gosec",
+            "revive",
+            "staticcheck"
+          ],
+          "path": "_test.go"
+        }
+      ]
+    },
+    "settings": {
+      "errcheck": {
+        "check-blank": true,
+        "check-type-assertions": true
+      },
+      "goconst": {
+        "min-len": 3,
+        "min-occurrences": 3
+      },
+      "gocyclo": {
+        "min-complexity": 15
+      },
+      "misspell": {
+        "locale": "US"
+      },
+      "revive": {
+        "rules": [
+          {
+            "name": "exported",
+            "severity": "warning"
+          },
+          {
+            "name": "error-return",
+            "severity": "warning"
+          }
+        ]
+      }
+    }
+  },
+  "version": "2"
+}
