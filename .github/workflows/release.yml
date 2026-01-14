@@ -82,8 +82,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-assets
-          # Copy all artifacts (executables and .exe files)
-          find artifacts -type f \( -executable -o -name "*.exe" \) -exec cp {} release-assets/ \;
+          # Debug: Show artifact structure
+          echo "Artifact directory structure:"
+          find artifacts -type f -ls || true
+          echo ""
+          # Find and copy all artifacts (they are in subdirectories per artifact)
+          # Look for files matching the expected naming pattern
+          find artifacts -type f -name "terraform-provider-httpx_*" -exec cp {} release-assets/ \;
           # Verify all files are present
           cd release-assets
           echo "Release assets:"
@@ -91,9 +96,18 @@ jobs:
           # Verify we have all 4 expected binaries
           COUNT=$(ls -1 | wc -l)
           if [ "$COUNT" -ne 4 ]; then
-            echo "Warning: Expected 4 binaries, found $COUNT"
+            echo "Error: Expected 4 binaries, found $COUNT"
+            echo "Files found:"
+            ls -1
+            echo ""
+            echo "Expected files:"
+            echo "  - terraform-provider-httpx_linux_amd64"
+            echo "  - terraform-provider-httpx_windows_amd64.exe"
+            echo "  - terraform-provider-httpx_darwin_amd64"
+            echo "  - terraform-provider-httpx_darwin_arm64"
             exit 1
           fi
+          echo "Successfully prepared all 4 release assets"
       
       - name: Extract version from tag
         id: tag
