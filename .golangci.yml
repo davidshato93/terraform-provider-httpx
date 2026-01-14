@@ -7,6 +7,13 @@ linters-settings:
   goconst:
     min-len: 3
     min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
   govet:
     check-shadowing: true
   gocyclo:
