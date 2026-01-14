@@ -63,6 +63,54 @@ func TestRedactHeaders(t *testing.T) {
 	}
 }
 
+func TestRedactHeaderValue(t *testing.T) {
+	tests := []struct {
+		name       string
+		headerName string
+		headerValue string
+		redactList []string
+		expected   string
+	}{
+		{
+			name:        "no redaction",
+			headerName:  "Content-Type",
+			headerValue: "application/json",
+			redactList:  []string{},
+			expected:    "application/json",
+		},
+		{
+			name:        "redact authorization",
+			headerName:  "Authorization",
+			headerValue: "Bearer secret-token",
+			redactList:  []string{"Authorization"},
+			expected:    "[REDACTED]",
+		},
+		{
+			name:        "case insensitive",
+			headerName:  "authorization",
+			headerValue: "Bearer secret-token",
+			redactList:  []string{"Authorization"},
+			expected:    "[REDACTED]",
+		},
+		{
+			name:        "not in redact list",
+			headerName:  "Content-Type",
+			headerValue: "application/json",
+			redactList:  []string{"Authorization"},
+			expected:    "application/json",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := RedactHeaderValue(tt.headerName, tt.headerValue, tt.redactList)
+			if result != tt.expected {
+				t.Errorf("RedactHeaderValue() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestTruncateString(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -87,6 +135,12 @@ func TestTruncateString(t *testing.T) {
 			input:   "exact",
 			maxLen:  5,
 			wantLen: 5,
+		},
+		{
+			name:    "empty string",
+			input:   "",
+			maxLen:  10,
+			wantLen: 0,
 		},
 	}
 
@@ -124,6 +178,12 @@ func TestRedactError(t *testing.T) {
 			redactList: []string{},
 			shouldContain: "error: connection failed",
 		},
+		{
+			name:       "case sensitive pattern match",
+			errMsg:     "error: Authorization header missing",
+			redactList: []string{"Authorization"},
+			shouldContain: "[REDACTED]",
+		},
 	}
 
 	for _, tt := range tests {
@@ -153,4 +213,3 @@ func containsMiddle(s, substr string) bool {
 	}
 	return false
 }
-
