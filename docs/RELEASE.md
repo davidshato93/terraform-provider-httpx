@@ -21,11 +21,44 @@ This provider follows [Semantic Versioning](https://semver.org/):
 
 ## Release Steps
 
-### 1. Update Version
+### Automated Release (Recommended)
+
+The release process is automated via GitHub Actions. When you push a tag, the workflow will:
+1. Build binaries for all platforms (linux/amd64, windows/amd64, darwin/amd64, darwin/arm64)
+2. Create a GitHub Release with all artifacts attached
+3. Mark as pre-release if the tag contains a hyphen (e.g., `v1.0.0-beta.1`)
+
+**To create a release:**
+
+1. Ensure all changes are committed and pushed:
+   ```bash
+   git add .
+   git commit -m "Prepare release v1.0.0"
+   git push
+   ```
+
+2. Create and push a tag:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+3. The GitHub Actions workflow will automatically:
+   - Build all platform binaries
+   - Create a GitHub Release
+   - Attach all artifacts to the release
+
+**Note:** The version is automatically extracted from the tag name, so you don't need to manually update `main.go` for releases.
+
+### Manual Release (Alternative)
+
+If you prefer to build and release manually:
+
+#### 1. Update Version
 
 Update the version constant in `main.go`:
 ```go
-const version = "1.0.0"
+var version string = "1.0.0"
 ```
 
 ### 2. Update CHANGELOG.md

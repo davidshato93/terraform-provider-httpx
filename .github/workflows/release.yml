@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on tags like v1.0.0, v1.2.3, etc.
+
+jobs:
+  build:
+    name: Build Release Artifacts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Linux builds (on ubuntu)
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          # Windows builds (on windows)
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+          # macOS builds (on macos) - both architectures
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25.5'
+      
+      - name: Build
+        id: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            OUTPUT_FILE="terraform-provider-httpx_${{ matrix.goos }}_${{ matrix.goarch }}.exe"
+          else
+            OUTPUT_FILE="terraform-provider-httpx_${{ matrix.goos }}_${{ matrix.goarch }}"
+          fi
+          go build -ldflags "-X main.version=${VERSION}" -o "$OUTPUT_FILE" .
+          echo "output_file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+          echo "Built: $OUTPUT_FILE"
+          ls -la "$OUTPUT_FILE" || echo "File not found!"
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: terraform-provider-httpx-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ steps.build.outputs.output_file }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: terraform-provider-httpx-*
+          merge-multiple: false
+      
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          # Copy all artifacts (executables and .exe files)
+          find artifacts -type f \( -executable -o -name "*.exe" \) -exec cp {} release-assets/ \;
+          # Verify all files are present
+          cd release-assets
+          echo "Release assets:"
+          ls -lah
+          # Verify we have all 4 expected binaries
+          COUNT=$(ls -1 | wc -l)
+          if [ "$COUNT" -ne 4 ]; then
+            echo "Warning: Expected 4 binaries, found $COUNT"
+            exit 1
+          fi
+      
+      - name: Extract version from tag
+        id: tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Tag version: $VERSION"
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.version }}
+          name: Release ${{ steps.tag.outputs.version }}
+          body: |
+            ## Terraform HTTP Provider ${{ steps.tag.outputs.version }}
+            
+            ### Downloads
+            
+            Binaries are available for the following platforms:
+            - Linux (amd64)
+            - Windows (amd64)
+            - macOS Intel (amd64)
+            - macOS Apple Silicon (arm64)
+            
+            ### Installation
+            
+            See [TESTING.md](TESTING.md) for local installation instructions.
+            
+            ### Changes
+            
+            See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+          files: release-assets/*
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.version, '-') }}
+
