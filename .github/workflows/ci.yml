@@ -16,7 +16,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.25.5'
       
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
@@ -33,7 +33,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.25.5'
       
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
@@ -48,40 +48,52 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        goos: [linux, windows, darwin]
-        goarch: [amd64]
-        exclude:
+        include:
+          # Linux builds (on ubuntu)
           - os: ubuntu-latest
-            goos: windows
-          - os: ubuntu-latest
-            goos: darwin
-          - os: windows-latest
             goos: linux
+            goarch: amd64
+          # Windows builds (on windows)
           - os: windows-latest
-            goos: darwin
-          - os: macos-latest
-            goos: linux
-          - os: macos-latest
             goos: windows
+            goarch: amd64
+          # macOS builds (on macos) - both architectures
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
     steps:
       - uses: actions/checkout@v3
       
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.25.5'
       
       - name: Build
+        id: build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
+        shell: bash
         run: |
-          go build -o terraform-provider-httpx_${GOOS}_${GOARCH} .
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            OUTPUT_FILE="terraform-provider-httpx_${{ matrix.goos }}_${{ matrix.goarch }}.exe"
+          else
+            OUTPUT_FILE="terraform-provider-httpx_${{ matrix.goos }}_${{ matrix.goarch }}"
+          fi
+          go build -o "$OUTPUT_FILE" .
+          echo "output_file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+          echo "Built: $OUTPUT_FILE"
+          ls -la "$OUTPUT_FILE" || echo "File not found!"
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: terraform-provider-httpx-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: terraform-provider-httpx_${GOOS}_${GOARCH}*
+          path: ${{ steps.build.outputs.output_file }}
+          if-no-files-found: error
 
