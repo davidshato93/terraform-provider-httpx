@@ -204,6 +204,8 @@ func (p *HttpxProvider) DataSources(ctx context.Context) []func() datasource.Dat
 
 // ProviderConfig wraps config.ProviderConfig for provider-specific use
 // This allows us to keep the config package independent
+//
+//nolint:revive // ProviderConfig is the correct name for Terraform provider configuration
 type ProviderConfig struct {
 	DefaultHeaders       map[string]string
 	BasicAuth            *BasicAuthModel

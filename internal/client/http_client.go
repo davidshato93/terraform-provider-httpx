@@ -25,7 +25,7 @@ func NewHTTPClient(cfg *config.ProviderConfig) (*HTTPClient, error) {
 
 	// Create TLS config
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: cfg.InsecureSkipVerify,
+		InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec // User-configurable option for testing/development
 	}
 
 	// Configure TLS certificates if provided

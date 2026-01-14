@@ -77,7 +77,7 @@ func (rc *RetryConfig) CalculateDelay(attempt int64, retryAfter string) time.Dur
 
 	// Apply jitter if enabled (add random 0-25% of delay)
 	if rc.Jitter {
-		jitterMs := int64(float64(delayMs) * 0.25 * rand.Float64())
+		jitterMs := int64(float64(delayMs) * 0.25 * rand.Float64()) //nolint:gosec // Non-cryptographic use for jitter
 		delay += time.Duration(jitterMs) * time.Millisecond
 	}
 

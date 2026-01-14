@@ -1,24 +1,4 @@
-# golangci-lint v1.x compatible configuration
-# Removed 'version: 2' for v1 compatibility
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-
-  gocyclo:
-    min-complexity: 15
-  misspell:
-    locale: US
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-      - name: error-return
-        severity: warning
+version: "2"
 
 linters:
   enable:
@@ -33,6 +13,24 @@ linters:
     - unconvert
     - unparam
     - unused
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocyclo:
+    min-complexity: 15
+  misspell:
+    locale: US
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: error-return
+        severity: warning
 
 issues:
   exclude-rules:
