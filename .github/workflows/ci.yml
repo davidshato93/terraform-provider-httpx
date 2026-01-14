@@ -80,7 +80,7 @@ jobs:
           go build -o terraform-provider-httpx_${GOOS}_${GOARCH} .
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: terraform-provider-httpx-${{ matrix.goos }}-${{ matrix.goarch }}
           path: terraform-provider-httpx_${GOOS}_${GOARCH}*
