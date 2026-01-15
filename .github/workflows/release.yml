@@ -117,12 +117,15 @@ jobs:
           echo "Tag version: $VERSION"
       
       - name: Import GPG key
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE || '' }}
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
         run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "Warning: GPG_PRIVATE_KEY secret not set, skipping GPG signing"
+            exit 0
+          fi
           echo "$GPG_PRIVATE_KEY" | gpg --batch --import
           # Trust the key (required for signing)
           # Extract the full fingerprint (the long hex string on the line after "sec")
@@ -153,12 +156,15 @@ jobs:
           echo "Expected 4 lines (one per platform)"
       
       - name: Sign release assets
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE || '' }}
         run: |
+          if [ -z "$GPG_PRIVATE_KEY" ] || [ -z "$GPG_KEY_ID" ]; then
+            echo "Warning: GPG secrets not set, skipping signing"
+            exit 0
+          fi
           cd release-assets
           # Sign individual binaries
           # If passphrase is empty, sign without passphrase option
