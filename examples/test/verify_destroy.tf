@@ -1,15 +1,5 @@
 # Quick test to verify on_destroy is working
-
-terraform {
-  required_providers {
-    httpx = {
-      source  = "davidshato93/httpx"
-      version = ">= 0.1.0"
-    }
-  }
-}
-
-provider "httpx" {}
+# Note: provider and required_providers defined in versions.tf
 
 # Create a simple test resource that we'll destroy
 resource "httpx_request" "verify_destroy" {
