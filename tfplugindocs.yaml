@@ -1,10 +1,7 @@
 provider: httpx
 templates:
   - templates/index.md.tmpl
-resources:
-  - templates/resources/_resource.md.tmpl
-data_sources:
-  - templates/data-sources/_data_source.md.tmpl
 output:
   directory: docs
+
 
