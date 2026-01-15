@@ -144,17 +144,26 @@ jobs:
         if: env.GPG_PRIVATE_KEY != ''
         env:
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE || '' }}
         run: |
           cd release-assets
           # Sign individual binaries
+          # If passphrase is empty, sign without passphrase option
           for file in terraform-provider-httpx_*; do
             echo "Signing $file with key $GPG_KEY_ID..."
-            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign "$file"
+            if [ -z "$GPG_PASSPHRASE" ]; then
+              gpg --batch --yes --pinentry-mode loopback --default-key "$GPG_KEY_ID" --armor --detach-sign "$file"
+            else
+              echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign "$file"
+            fi
           done
           # Sign SHASUMS file (required by Terraform Registry)
           echo "Signing SHASUMS file..."
-          echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign SHASUMS
+          if [ -z "$GPG_PASSPHRASE" ]; then
+            gpg --batch --yes --pinentry-mode loopback --default-key "$GPG_KEY_ID" --armor --detach-sign SHASUMS
+          else
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign SHASUMS
+          fi
           # Verify SHASUMS signature was created
           if [ ! -f SHASUMS.asc ]; then
             echo "Error: SHASUMS.asc was not created!"
