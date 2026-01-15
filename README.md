@@ -1,6 +1,6 @@
 # Terraform Provider: httpx
 
-A Terraform provider for executing HTTP requests with retry logic, conditional polling, and safe secret handling.
+A Terraform provider for executing HTTP requests with retry logic, conditional polling, resource cleanup (on_destroy), and safe secret handling.
 
 ## Features
 
@@ -11,7 +11,7 @@ A Terraform provider for executing HTTP requests with retry logic, conditional p
 - Strong secret hygiene (avoids leaking tokens into state/logs)
 - JSON path extraction for downstream resources
 - Response validation with expectations
-- **Resource cleanup with `on_destroy` block** (execute HTTP requests when resource is deleted)
+- **Resource cleanup with `on_destroy` block** (execute HTTP requests when resource is deleted, with template interpolation)
 
 ## Provider Configuration
 
@@ -171,24 +171,23 @@ data "httpx_request" "status" {
 }
 ```
 
-## Examples
+## Documentation
 
-See the [`examples/`](./examples/) directory for more examples:
-- Basic requests (`examples/test/main.tf`)
-- Retry configurations (`examples/test/retry_example.tf`)
-- Conditional retry/polling (`examples/test/conditional_retry_example.tf`)
-- Extraction (`examples/test/extraction_example.tf`)
-- Resource cleanup on destroy (`examples/test/on_destroy_example.tf` and `examples/test/test_on_destroy.tf`)
-- Data sources (`examples/test/datasource_example.tf`)
+### For Users
 
-## Best Practices
+- [Provider Configuration](./README.md#provider-configuration) - Configure the provider
+- [Resource Documentation](./docs/resources/request.md) - Full schema for `httpx_request` resource
+- [Data Source Documentation](./docs/data-sources/request.md) - Full schema for data source
+- [Examples](./examples/test/README.md) - Real-world usage examples
+- [Best Practices](./docs/GOTCHAS.md) - Common pitfalls and recommendations
 
-See [`docs/GOTCHAS.md`](./docs/GOTCHAS.md) for common gotchas and best practices:
-- Plan-time vs apply-time execution
-- State size management
-- Sensitive data handling
-- Retry behavior
-- Common mistakes
+### For Developers
+
+- [Implementation Details](./docs/ON_DESTROY_IMPLEMENTATION.md) - How the on_destroy feature works
+- [Testing Guide](./TESTING.md) - How to test the provider locally
+- [Verifying on_destroy](./examples/test/VERIFY_DESTROY.md) - How to verify destroy requests
+- [Release Process](./docs/RELEASE.md) - How to cut a release
+- [Changelog](./CHANGELOG.md) - Version history
 
 ## Development
 
@@ -204,9 +203,32 @@ go build -o terraform-provider-httpx
 go test ./...
 ```
 
-### Local Testing
+### Local Testing with Terraform
 
-See [`TESTING.md`](./TESTING.md) for instructions on testing the provider locally.
+```bash
+# Set up provider override
+export TF_CLI_CONFIG_FILE=examples/test/.terraformrc
+
+# Build provider
+go build -o terraform-provider-httpx
+
+# Run examples
+cd examples/test
+terraform plan
+terraform apply
+terraform destroy
+```
+
+For detailed local testing instructions, see [TESTING.md](./TESTING.md).
+
+### Verifying on_destroy Feature
+
+```bash
+cd examples/test
+./verify_destroy.sh
+```
+
+See [VERIFY_DESTROY.md](./examples/test/VERIFY_DESTROY.md) for detailed verification procedures.
 
 ### CI/CD
 
@@ -214,6 +236,7 @@ The project includes GitHub Actions workflows for:
 - Linting (`golangci-lint`)
 - Testing (`go test`)
 - Building binaries for multiple platforms
+- Automated releases with GPG signing
 
 ## Release Process
 
@@ -222,4 +245,3 @@ See [`docs/RELEASE.md`](./docs/RELEASE.md) for the release process and versionin
 ## License
 
 Internal use only.
-
