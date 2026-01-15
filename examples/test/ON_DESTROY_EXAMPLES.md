@@ -65,7 +65,7 @@ resource "httpx_request" "resource" {
       min_delay_ms           = 500
       max_delay_ms           = 2000
       backoff                = "exponential"
-      retry_on_status_codes  = [429, 500, 502, 503]
+      retry_on_status_codes  = [429, 500, 502, 503]  # Retry on server errors
     }
   }
 }

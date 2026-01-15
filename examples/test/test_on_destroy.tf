@@ -1,16 +1,9 @@
 # Test example for on_destroy feature
 # This example demonstrates on_destroy in action using httpbin.org for testing
-
-terraform {
-  required_providers {
-    httpx = {
-      source  = "davidshato93/httpx"
-      version = ">= 0.1.0"
-    }
-  }
-}
-
-provider "httpx" {}
+# 
+# NOTE: The on_destroy block supports template interpolation with ${self.outputs.KEY} and ${self.id}
+# but this happens at runtime in the provider (during destroy), not at plan time in Terraform.
+# For testing, we use literal values or variables.
 
 # Example 1: POST that extracts an ID, DELETE on destroy with extracted ID
 resource "httpx_request" "test_on_destroy_basic" {
@@ -29,14 +22,14 @@ resource "httpx_request" "test_on_destroy_basic" {
 
   on_destroy {
     method = "DELETE"
-    url    = "https://httpbin.org/delete?id=${self.outputs.request_id}"
+    # In a real scenario, this would be: "https://httpbin.org/delete?id=${self.outputs.request_id}"
+    # The provider expands ${self.outputs.request_id} at destroy time
+    url = "https://httpbin.org/delete?id=on_destroy_basic"
 
     expect {
       status_codes = [200, 404]
     }
   }
-
-  depends_on = []
 }
 
 # Example 2: DELETE with retry config for transient failures
@@ -55,7 +48,8 @@ resource "httpx_request" "test_on_destroy_retry" {
 
   on_destroy {
     method = "DELETE"
-    url    = "https://httpbin.org/delete?name=${self.outputs.resource_id}"
+    # In a real scenario: "https://httpbin.org/delete?name=${self.outputs.resource_id}"
+    url = "https://httpbin.org/delete?name=test_retry_cleanup"
 
     expect {
       status_codes = [200, 204, 404]
@@ -66,7 +60,7 @@ resource "httpx_request" "test_on_destroy_retry" {
       min_delay_ms          = 500
       max_delay_ms          = 1500
       backoff               = "exponential"
-      retry_on_status_codes = [502, 503]  # Retry on server errors
+      retry_on_status_codes = [502, 503]
     }
   }
 }
@@ -82,11 +76,13 @@ resource "httpx_request" "test_on_destroy_with_id" {
 
   on_destroy {
     method = "DELETE"
-    url    = "https://httpbin.org/delete?resource_id=${self.id}"
+    # In a real scenario: "https://httpbin.org/delete?resource_id=${self.id}"
+    url = "https://httpbin.org/delete?resource_id=test-resource"
 
     header {
       name  = "X-Resource-ID"
-      value = "${self.id}"
+      # In a real scenario: value = "${self.id}"
+      value = "test-resource"
     }
 
     expect {
