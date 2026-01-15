@@ -116,6 +116,61 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Tag version: $VERSION"
       
+      - name: Import GPG key
+        if: env.GPG_PRIVATE_KEY != ''
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          # Trust the key (required for signing)
+          KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep -E "^(sec|ssb)" | head -1 | awk '{print $2}' | cut -d'/' -f2)
+          echo "$KEY_ID:6:" | gpg --import-ownertrust
+      
+      - name: Generate SHASUMS file
+        run: |
+          cd release-assets
+          # Generate SHA256 checksums for all binaries (Terraform Registry requirement)
+          # Format: SHA256  filename
+          shasum -a 256 terraform-provider-httpx_* > SHASUMS
+          echo "SHASUMS file contents:"
+          cat SHASUMS
+          echo ""
+          echo "Verifying SHASUMS file:"
+          wc -l SHASUMS
+          echo "Expected 4 lines (one per platform)"
+      
+      - name: Sign release assets
+        if: env.GPG_PRIVATE_KEY != ''
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          cd release-assets
+          # Sign individual binaries
+          for file in terraform-provider-httpx_*; do
+            echo "Signing $file with key $GPG_KEY_ID..."
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign "$file"
+          done
+          # Sign SHASUMS file (required by Terraform Registry)
+          echo "Signing SHASUMS file..."
+          echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign SHASUMS
+          # Verify SHASUMS signature was created
+          if [ ! -f SHASUMS.asc ]; then
+            echo "Error: SHASUMS.asc was not created!"
+            exit 1
+          fi
+          echo "Signed files:"
+          ls -lah *.asc || echo "No signature files found"
+          echo ""
+          echo "SHASUMS files:"
+          ls -lah SHASUMS* || echo "No SHASUMS files found"
+          echo ""
+          echo "Verifying release assets:"
+          echo "Binaries: $(ls -1 terraform-provider-httpx_* | wc -l)"
+          echo "Signatures: $(ls -1 *.asc | wc -l)"
+          echo "SHASUMS files: $(ls -1 SHASUMS* | wc -l)"
+      
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -139,7 +194,18 @@ jobs:
             ### Changes
             
             See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
-          files: release-assets/*
+            
+            ### Verification
+            
+            All binaries are signed with GPG. To verify:
+            ```bash
+            gpg --verify terraform-provider-httpx_<platform>.<ext>.asc terraform-provider-httpx_<platform>.<ext>
+            ```
+          files: |
+            release-assets/terraform-provider-httpx_*
+            release-assets/*.asc
+            release-assets/SHASUMS
+            release-assets/SHASUMS.asc
           draft: false
           prerelease: ${{ contains(steps.tag.outputs.version, '-') }}
 

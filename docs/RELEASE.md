@@ -107,14 +107,53 @@ GOOS=windows GOARCH=amd64 go build -o terraform-provider-httpx_windows_amd64.exe
 6. Upload binaries for each platform
 7. Publish release
 
-## Internal Distribution
+## Publishing to Terraform Registry
 
-### Option 1: Terraform Registry (Public)
+### Prerequisites
 
-If publishing to Terraform Registry:
-1. Create a GitHub release (as above)
-2. The registry will automatically detect the release
-3. Follow [Terraform Registry publishing guide](https://www.terraform.io/docs/registry/providers/publishing.html)
+Before publishing to Terraform Registry, ensure:
+
+1. ✅ **GPG key added to GitHub**: https://github.com/settings/keys
+2. ✅ **GPG key added to Terraform Registry**: https://registry.terraform.io/settings/gpg-keys
+3. ✅ **GitHub Secrets configured**: `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`, `GPG_KEY_ID`
+4. ✅ **Provider repository follows naming**: `terraform-provider-<name>`
+5. ✅ **Repository is public** (required for Terraform Registry)
+
+See [GPG_SETUP.md](GPG_SETUP.md) for detailed GPG key setup instructions.
+
+### Publishing Steps
+
+1. **Create a release** by pushing a tag:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. **GitHub Actions automatically**:
+   - Builds binaries for all platforms
+   - Signs all binaries with your GPG key
+   - Creates a GitHub Release with signed artifacts
+
+3. **Terraform Registry automatically**:
+   - Detects your GitHub release (usually within minutes)
+   - Verifies GPG signatures
+   - Publishes your provider
+
+4. **Verify your provider**:
+   - Go to: `https://registry.terraform.io/providers/davidshato93/httpx`
+   - Check that releases show as verified
+
+### Terraform Registry Requirements
+
+- **Repository naming**: Must be `terraform-provider-<name>`
+- **Releases**: Must be signed with GPG
+- **Version tags**: Must follow semantic versioning (e.g., `v1.0.0`)
+- **Repository**: Must be public
+- **GPG key**: Must be added to both GitHub and Terraform Registry
+
+For more details, see:
+- [Terraform Registry Publishing Guide](https://developer.hashicorp.com/terraform/registry/providers/publishing)
+- [GPG Setup Guide](GPG_SETUP.md)
 
 ### Option 2: Private Registry
 
