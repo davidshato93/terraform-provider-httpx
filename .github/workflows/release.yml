@@ -142,18 +142,43 @@ jobs:
           echo "Imported keys:"
           gpg --list-secret-keys --keyid-format LONG
       
+      - name: Prepare release assets (create zips)
+        run: |
+          cd release-assets
+          echo "Creating zip files for Terraform Registry..."
+          VERSION="${{ steps.tag.outputs.version }}"
+          
+          # Create zip files for each binary
+          # Terraform Registry requires: terraform-provider-{NAME}_{VERSION}_{OS}_{ARCH}.zip
+          zip -j "terraform-provider-httpx_${VERSION}_darwin_amd64.zip" terraform-provider-httpx_darwin_amd64
+          zip -j "terraform-provider-httpx_${VERSION}_darwin_arm64.zip" terraform-provider-httpx_darwin_arm64
+          zip -j "terraform-provider-httpx_${VERSION}_linux_amd64.zip" terraform-provider-httpx_linux_amd64
+          zip -j "terraform-provider-httpx_${VERSION}_windows_amd64.zip" terraform-provider-httpx_windows_amd64.exe
+          
+          echo "Created zip files:"
+          ls -lh terraform-provider-httpx_${VERSION}_*.zip
+          
+          # Copy manifest file for Terraform Registry
+          # It will be renamed to terraform-provider-httpx_{VERSION}_manifest.json
+          cp ../terraform-registry-manifest.json "terraform-provider-httpx_${VERSION}_manifest.json"
+          
+          echo ""
+          echo "All files in release-assets:"
+          ls -lah
+      
       - name: Generate SHASUMS file
         run: |
           cd release-assets
           echo "Current directory: $(pwd)"
           echo "Files before SHASUMS generation:"
           ls -lah
-          # Generate SHA256 checksums for all binaries (Terraform Registry requirement)
-          # Terraform Registry requires the filename format: terraform-provider-{NAME}_{VERSION}_SHA256SUMS
-          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+          # Generate SHA256 checksums for all binaries AND manifest (Terraform Registry requirement)
+          # Per Terraform Registry docs: shasum -a 256 *.zip > terraform-provider-{NAME}_{VERSION}_SHA256SUMS
+          # NOTE: Must include BOTH zip files AND manifest file
           VERSION="${{ steps.tag.outputs.version }}"
           SHASUMS_FILE="terraform-provider-httpx_${VERSION}_SHA256SUMS"
-          if ! shasum -a 256 terraform-provider-httpx_* > "$SHASUMS_FILE"; then
+          # Create SHASUMS with both zip files and manifest
+          if ! shasum -a 256 terraform-provider-httpx_${VERSION}_*.zip terraform-provider-httpx_${VERSION}_manifest.json > "$SHASUMS_FILE"; then
             echo "Error: Failed to generate SHASUMS"
             exit 1
           fi
@@ -168,7 +193,7 @@ jobs:
           echo ""
           echo "Verifying SHASUMS file:"
           wc -l "$SHASUMS_FILE"
-          echo "Expected 4 lines (one per platform)"
+          echo "Expected: zip files (4) + manifest (1) = 5 lines"
           echo ""
           echo "Files after SHASUMS generation:"
           ls -lah terraform-provider-httpx_*SHA256SUMS*
