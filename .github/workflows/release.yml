@@ -117,7 +117,7 @@ jobs:
           echo "Tag version: $VERSION"
       
       - name: Import GPG key
-        if: env.GPG_PRIVATE_KEY != ''
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE || '' }}
@@ -153,8 +153,9 @@ jobs:
           echo "Expected 4 lines (one per platform)"
       
       - name: Sign release assets
-        if: env.GPG_PRIVATE_KEY != ''
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE || '' }}
         run: |
