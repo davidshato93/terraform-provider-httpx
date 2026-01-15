@@ -250,20 +250,29 @@ jobs:
             echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --armor --detach-sign "$MANIFEST"
           fi
           
-          # Sign SHASUMS file
+          # Sign SHASUMS file (Terraform Registry requires a *binary* detached signature)
           SHASUMS="terraform-provider-httpx_${VER}_SHA256SUMS"
-          echo "Signing $SHASUMS..."
+          echo "Signing $SHASUMS (binary .sig)..."
+
+          # Ensure we don't have stale signature files from previous runs
+          rm -f "${SHASUMS}.sig" "${SHASUMS}.asc" || true
+
           if [ -z "$GPG_PASSPHRASE" ]; then
-            gpg --batch --yes --armor --detach-sign "$SHASUMS"
+            gpg --batch --yes --pinentry-mode loopback \
+              --detach-sign --output "${SHASUMS}.sig" "$SHASUMS"
           else
-            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --armor --detach-sign "$SHASUMS"
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+              --passphrase-fd 0 \
+              --detach-sign --output "${SHASUMS}.sig" "$SHASUMS"
           fi
-          
-          # Rename SHASUMS signature to .sig (Terraform Registry requirement)
-          if [ -f "${SHASUMS}.asc" ]; then
-            mv "${SHASUMS}.asc" "${SHASUMS}.sig"
-            echo "Renamed ${SHASUMS}.asc to ${SHASUMS}.sig"
+
+          # Verify signature file exists
+          if [ ! -f "${SHASUMS}.sig" ]; then
+            echo "Error: SHASUMS binary signature was not created: ${SHASUMS}.sig"
+            exit 1
           fi
+
+          file "${SHASUMS}.sig" || true
           
           echo ""
           echo "Final release-assets directory:"
