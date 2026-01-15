@@ -159,18 +159,25 @@ jobs:
           # - Zip filename (NO leading v): terraform-provider-httpx_${VER}_<os>_<arch>.zip
           # - Binary inside zip (YES leading v): terraform-provider-httpx_v${VER}[.exe]
 
+          # Ensure all binaries are executable before zipping
+          # This prevents "permission denied" errors when users extract the provider
+          chmod +x terraform-provider-httpx_*
+          
           # Linux
           cp "terraform-provider-httpx_linux_amd64" "terraform-provider-httpx_v${VER}"
+          chmod +x "terraform-provider-httpx_v${VER}"
           zip -j "terraform-provider-httpx_${VER}_linux_amd64.zip" "terraform-provider-httpx_v${VER}"
           rm -f "terraform-provider-httpx_v${VER}"
 
           # Darwin amd64
           cp "terraform-provider-httpx_darwin_amd64" "terraform-provider-httpx_v${VER}"
+          chmod +x "terraform-provider-httpx_v${VER}"
           zip -j "terraform-provider-httpx_${VER}_darwin_amd64.zip" "terraform-provider-httpx_v${VER}"
           rm -f "terraform-provider-httpx_v${VER}"
 
           # Darwin arm64
           cp "terraform-provider-httpx_darwin_arm64" "terraform-provider-httpx_v${VER}"
+          chmod +x "terraform-provider-httpx_v${VER}"
           zip -j "terraform-provider-httpx_${VER}_darwin_arm64.zip" "terraform-provider-httpx_v${VER}"
           rm -f "terraform-provider-httpx_v${VER}"
 
