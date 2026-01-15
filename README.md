@@ -11,6 +11,7 @@ A Terraform provider for executing HTTP requests with retry logic, conditional p
 - Strong secret hygiene (avoids leaking tokens into state/logs)
 - JSON path extraction for downstream resources
 - Response validation with expectations
+- **Resource cleanup with `on_destroy` block** (execute HTTP requests when resource is deleted)
 
 ## Provider Configuration
 
@@ -143,6 +144,7 @@ resource "httpx_request" "attach" {
 - `store_response_body` (bool) - Whether to store response body in state
 - `read_mode` (string) - Read behavior: "none" or "refresh"
 - `timeouts` (block) - Timeout configuration
+- `on_destroy` (block) - Execute HTTP request when resource is destroyed (template interpolation with `${self.outputs.KEY}` and `${self.id}` supported)
 
 ### Computed Attributes
 
@@ -176,6 +178,7 @@ See the [`examples/`](./examples/) directory for more examples:
 - Retry configurations (`examples/test/retry_example.tf`)
 - Conditional retry/polling (`examples/test/conditional_retry_example.tf`)
 - Extraction (`examples/test/extraction_example.tf`)
+- Resource cleanup on destroy (`examples/test/on_destroy_example.tf` and `examples/test/test_on_destroy.tf`)
 - Data sources (`examples/test/datasource_example.tf`)
 
 ## Best Practices

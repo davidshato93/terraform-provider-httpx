@@ -278,6 +278,200 @@ func (r *HttpxRequestResource) Schema(_ context.Context, _ resource.SchemaReques
 					},
 				},
 			},
+			"on_destroy": schema.SingleNestedBlock{
+				Description: "HTTP request to execute when resource is destroyed. Supports template interpolation with ${self.outputs.KEY} and ${self.id}",
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						Optional:    true,
+						Description: "The URL to make the destroy request to (supports ${self.outputs.KEY} and ${self.id} interpolation)",
+					},
+					"method": schema.StringAttribute{
+						Optional:    true,
+						Description: "HTTP method for destroy request",
+					},
+					"headers": schema.MapAttribute{
+						ElementType: types.StringType,
+						Optional:    true,
+						Description: "Request headers for destroy request",
+					},
+					"query": schema.MapAttribute{
+						ElementType: types.StringType,
+						Optional:    true,
+						Description: "Query parameters for destroy request",
+					},
+					"body": schema.StringAttribute{
+						Optional:    true,
+						Description: "Raw request body for destroy request",
+					},
+					"body_json": schema.StringAttribute{
+						Optional:    true,
+						Description: "JSON request body for destroy request",
+					},
+					"body_file": schema.StringAttribute{
+						Optional:    true,
+						Description: "Path to file to read for destroy request body",
+					},
+					"bearer_token": schema.StringAttribute{
+						Optional:    true,
+						Sensitive:   true,
+						Description: "Bearer token for destroy request",
+					},
+					"timeout_ms": schema.Int64Attribute{
+						Optional:    true,
+						Description: "Request timeout for destroy request in milliseconds",
+					},
+					"insecure_skip_verify": schema.BoolAttribute{
+						Optional:    true,
+						Description: "Skip TLS certificate verification for destroy request",
+					},
+					"proxy_url": schema.StringAttribute{
+						Optional:    true,
+						Description: "Proxy URL for destroy request",
+					},
+					"response_sensitive": schema.BoolAttribute{
+						Optional:    true,
+						Description: "Mark destroy response body as sensitive",
+					},
+					"store_response_body": schema.BoolAttribute{
+						Optional:    true,
+						Description: "Whether to store destroy response body (not persisted to state since resource is deleted)",
+					},
+				},
+				Blocks: map[string]schema.Block{
+					"header": schema.ListNestedBlock{
+						Description: "Repeated header blocks for destroy request",
+						NestedObject: schema.NestedBlockObject{
+							Attributes: map[string]schema.Attribute{
+								"name": schema.StringAttribute{
+									Required:    true,
+									Description: "Header name",
+								},
+								"value": schema.StringAttribute{
+									Required:    true,
+									Description: "Header value (supports ${self.outputs.KEY} and ${self.id} interpolation)",
+								},
+							},
+						},
+					},
+					"basic_auth": schema.SingleNestedBlock{
+						Description: "Basic authentication credentials for destroy request",
+						Attributes: map[string]schema.Attribute{
+							"username": schema.StringAttribute{
+								Optional:    true,
+								Sensitive:   true,
+								Description: "Basic auth username",
+							},
+							"password": schema.StringAttribute{
+								Optional:    true,
+								Sensitive:   true,
+								Description: "Basic auth password",
+							},
+						},
+					},
+					"retry": schema.SingleNestedBlock{
+						Description: "Retry configuration for destroy request",
+						Attributes: map[string]schema.Attribute{
+							"attempts": schema.Int64Attribute{
+								Optional:    true,
+								Description: "Maximum number of retry attempts",
+							},
+							"min_delay_ms": schema.Int64Attribute{
+								Optional:    true,
+								Description: "Minimum delay between retries in milliseconds",
+							},
+							"max_delay_ms": schema.Int64Attribute{
+								Optional:    true,
+								Description: "Maximum delay between retries in milliseconds",
+							},
+							"backoff": schema.StringAttribute{
+								Optional:    true,
+								Description: "Backoff strategy: 'fixed', 'linear', or 'exponential'",
+							},
+							"jitter": schema.BoolAttribute{
+								Optional:    true,
+								Description: "Add jitter to retry delays",
+							},
+							"retry_on_status_codes": schema.ListAttribute{
+								ElementType: types.Int64Type,
+								Optional:    true,
+								Description: "HTTP status codes that should trigger a retry",
+							},
+							"respect_retry_after": schema.BoolAttribute{
+								Optional:    true,
+								Description: "Respect Retry-After header if present",
+							},
+						},
+					},
+					"retry_until": schema.SingleNestedBlock{
+						Description: "Conditional retry configuration for destroy request",
+						Attributes: map[string]schema.Attribute{
+							"status_codes": schema.ListAttribute{
+								ElementType: types.Int64Type,
+								Optional:    true,
+								Description: "Status codes that satisfy the condition",
+							},
+							"json_path_equals": schema.MapAttribute{
+								ElementType: types.StringType,
+								Optional:    true,
+								Description: "JSON path conditions that must equal specified values",
+							},
+							"header_equals": schema.MapAttribute{
+								ElementType: types.StringType,
+								Optional:    true,
+								Description: "Header conditions that must equal specified values",
+							},
+							"body_regex": schema.StringAttribute{
+								Optional:    true,
+								Description: "Regex pattern that must match the response body",
+							},
+						},
+					},
+					"expect": schema.SingleNestedBlock{
+						Description: "Response expectations for destroy request",
+						Attributes: map[string]schema.Attribute{
+							"status_codes": schema.ListAttribute{
+								ElementType: types.Int64Type,
+								Optional:    true,
+								Description: "Expected HTTP status codes",
+							},
+							"json_path_exists": schema.ListAttribute{
+								ElementType: types.StringType,
+								Optional:    true,
+								Description: "JSON paths that must exist",
+							},
+							"json_path_equals": schema.MapAttribute{
+								ElementType: types.StringType,
+								Optional:    true,
+								Description: "JSON path conditions that must equal specified values",
+							},
+							"header_present": schema.ListAttribute{
+								ElementType: types.StringType,
+								Optional:    true,
+								Description: "Headers that must be present",
+							},
+						},
+					},
+					"extract": schema.ListNestedBlock{
+						Description: "Extract values from destroy response (for condition evaluation only, not persisted)",
+						NestedObject: schema.NestedBlockObject{
+							Attributes: map[string]schema.Attribute{
+								"name": schema.StringAttribute{
+									Required:    true,
+									Description: "Name of the extracted value",
+								},
+								"json_path": schema.StringAttribute{
+									Optional:    true,
+									Description: "JSON path to extract from",
+								},
+								"header": schema.StringAttribute{
+									Optional:    true,
+									Description: "Header name to extract from",
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -681,8 +875,166 @@ func (r *HttpxRequestResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (r *HttpxRequestResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Info(ctx, "Delete method called - no-op by default")
+	var model HttpxRequestResourceModel
 
-	// Delete is a no-op by default as per design
-	// No error needed
+	// Read current state
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If no on_destroy configured, just remove from state (no-op delete)
+	if model.OnDestroy == nil {
+		tflog.Info(ctx, "Delete method called - no on_destroy block configured, removing from state")
+		return
+	}
+
+	tflog.Info(ctx, "Delete method called - executing on_destroy request")
+
+	// Build interpolation context from current state
+	interpolCtx, err := BuildInterpolationContextFromState(ctx, &model)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to build interpolation context", err.Error())
+		return
+	}
+
+	// Expand templates in on_destroy config
+	destroyConfig := model.OnDestroy
+
+	// Interpolate URL
+	if !destroyConfig.Url.IsNull() {
+		expandedURL, err := InterpolateString(ctx, destroyConfig.Url.ValueString(), interpolCtx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to interpolate destroy URL", err.Error())
+			return
+		}
+		destroyConfig.Url = types.StringValue(expandedURL)
+	}
+
+	// Interpolate headers (map)
+	if !destroyConfig.Headers.IsNull() {
+		headersMap, err := ConvertTerraformMap(ctx, destroyConfig.Headers)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid destroy headers", err.Error())
+			return
+		}
+		expandedHeaders, err := InterpolateMap(ctx, headersMap, interpolCtx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to interpolate destroy headers", err.Error())
+			return
+		}
+		// Convert back to Terraform map
+		headersAttrMap := make(map[string]attr.Value)
+		for k, v := range expandedHeaders {
+			headersAttrMap[k] = types.StringValue(v)
+		}
+		destroyConfig.Headers = types.MapValueMust(types.StringType, headersAttrMap)
+	}
+
+	// Interpolate header blocks (repeated)
+	if len(destroyConfig.HeaderBlocks) > 0 {
+		expandedBlocks, err := InterpolateHeaderBlocks(ctx, destroyConfig.HeaderBlocks, interpolCtx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to interpolate destroy headers", err.Error())
+			return
+		}
+		destroyConfig.HeaderBlocks = expandedBlocks
+	}
+
+	// Interpolate query parameters
+	if !destroyConfig.Query.IsNull() {
+		queryMap, err := ConvertTerraformMap(ctx, destroyConfig.Query)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid destroy query", err.Error())
+			return
+		}
+		expandedQuery, err := InterpolateMap(ctx, queryMap, interpolCtx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to interpolate destroy query", err.Error())
+			return
+		}
+		queryAttrMap := make(map[string]attr.Value)
+		for k, v := range expandedQuery {
+			queryAttrMap[k] = types.StringValue(v)
+		}
+		destroyConfig.Query = types.MapValueMust(types.StringType, queryAttrMap)
+	}
+
+	// Interpolate body fields
+	if !destroyConfig.Body.IsNull() {
+		expandedBody, err := InterpolateString(ctx, destroyConfig.Body.ValueString(), interpolCtx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to interpolate destroy body", err.Error())
+			return
+		}
+		destroyConfig.Body = types.StringValue(expandedBody)
+	}
+
+	if !destroyConfig.BodyJson.IsNull() {
+		expandedBodyJson, err := InterpolateString(ctx, destroyConfig.BodyJson.ValueString(), interpolCtx)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to interpolate destroy body_json", err.Error())
+			return
+		}
+		destroyConfig.BodyJson = types.StringValue(expandedBodyJson)
+	}
+
+	// Build HTTP request from destroy config
+	headers, err := ConvertTerraformMap(ctx, destroyConfig.Headers)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid destroy headers", err.Error())
+		return
+	}
+
+	query, err := ConvertTerraformMap(ctx, destroyConfig.Query)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid destroy query", err.Error())
+		return
+	}
+
+	httpReq, err := BuildRequest(ctx, &RequestConfig{
+		Url:              destroyConfig.Url.ValueString(),
+		Method:           destroyConfig.Method.ValueString(),
+		Headers:          headers,
+		HeaderBlocks:     destroyConfig.HeaderBlocks,
+		Query:            query,
+		Body:             destroyConfig.Body,
+		BodyJson:         destroyConfig.BodyJson,
+		BodyFile:         destroyConfig.BodyFile,
+		BasicAuth:        destroyConfig.BasicAuth,
+		BearerToken:      destroyConfig.BearerToken,
+		ProviderDefaults: r.config,
+	})
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to build destroy request", err.Error())
+		return
+	}
+
+	// Build retry configs
+	retryConfig := BuildRetryConfig(ctx, destroyConfig.Retry)
+	retryUntilConfig := BuildRetryUntilConfig(ctx, destroyConfig.RetryUntil)
+
+	// Execute request with retry logic
+	result, err := ExecuteRequestWithRetry(ctx, httpReq, r.config, retryConfig, retryUntilConfig)
+	if err != nil {
+		tflog.Error(ctx, fmt.Sprintf("Destroy request failed: %s", err.Error()))
+		resp.Diagnostics.AddError("Destroy request failed", err.Error())
+		// Keep state on destroy failure so Terraform can retry
+		return
+	}
+
+	// Validate expectations
+	if destroyConfig.Expect != nil {
+		if err := ValidateExpectations(ctx, result, destroyConfig.Expect); err != nil {
+			tflog.Error(ctx, fmt.Sprintf("Destroy expectation validation failed: %s", err.Error()))
+			resp.Diagnostics.AddError("Destroy expectation validation failed", err.Error())
+			// Keep state on expectation failure
+			return
+		}
+	}
+
+	// Log successful destroy execution
+	tflog.Info(ctx, fmt.Sprintf("Destroy request succeeded with status code %d", result.StatusCode))
+
+	// Successfully removed - state will be cleared by Terraform framework
 }

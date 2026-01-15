@@ -47,6 +47,7 @@ output "response" {
 - `header` (Block List) Repeated header blocks for multiple values with the same name (see [below for nested schema](#nestedblock--header))
 - `headers` (Map of String) Request headers as a map
 - `insecure_skip_verify` (Boolean) Skip TLS certificate verification
+- `on_destroy` (Block, Optional) HTTP request to execute when resource is destroyed. Supports template interpolation with ${self.outputs.KEY} and ${self.id} (see [below for nested schema](#nestedblock--on_destroy))
 - `proxy_url` (String) Proxy URL
 - `query` (Map of String) Query parameters
 - `read_mode` (String) Read behavior: 'none' or 'refresh'
@@ -107,6 +108,99 @@ Required:
 
 - `name` (String) Header name
 - `value` (String) Header value
+
+
+<a id="nestedblock--on_destroy"></a>
+### Nested Schema for `on_destroy`
+
+Optional:
+
+- `basic_auth` (Block, Optional) Basic authentication credentials for destroy request (see [below for nested schema](#nestedblock--on_destroy--basic_auth))
+- `bearer_token` (String, Sensitive) Bearer token for destroy request
+- `body` (String) Raw request body for destroy request
+- `body_file` (String) Path to file to read for destroy request body
+- `body_json` (String) JSON request body for destroy request
+- `expect` (Block, Optional) Response expectations for destroy request (see [below for nested schema](#nestedblock--on_destroy--expect))
+- `extract` (Block List) Extract values from destroy response (for condition evaluation only, not persisted) (see [below for nested schema](#nestedblock--on_destroy--extract))
+- `header` (Block List) Repeated header blocks for destroy request (see [below for nested schema](#nestedblock--on_destroy--header))
+- `headers` (Map of String) Request headers for destroy request
+- `insecure_skip_verify` (Boolean) Skip TLS certificate verification for destroy request
+- `method` (String) HTTP method for destroy request
+- `proxy_url` (String) Proxy URL for destroy request
+- `query` (Map of String) Query parameters for destroy request
+- `response_sensitive` (Boolean) Mark destroy response body as sensitive
+- `retry` (Block, Optional) Retry configuration for destroy request (see [below for nested schema](#nestedblock--on_destroy--retry))
+- `retry_until` (Block, Optional) Conditional retry configuration for destroy request (see [below for nested schema](#nestedblock--on_destroy--retry_until))
+- `store_response_body` (Boolean) Whether to store destroy response body (not persisted to state since resource is deleted)
+- `timeout_ms` (Number) Request timeout for destroy request in milliseconds
+- `url` (String) The URL to make the destroy request to (supports ${self.outputs.KEY} and ${self.id} interpolation)
+
+<a id="nestedblock--on_destroy--basic_auth"></a>
+### Nested Schema for `on_destroy.basic_auth`
+
+Optional:
+
+- `password` (String, Sensitive) Basic auth password
+- `username` (String, Sensitive) Basic auth username
+
+
+<a id="nestedblock--on_destroy--expect"></a>
+### Nested Schema for `on_destroy.expect`
+
+Optional:
+
+- `header_present` (List of String) Headers that must be present
+- `json_path_equals` (Map of String) JSON path conditions that must equal specified values
+- `json_path_exists` (List of String) JSON paths that must exist
+- `status_codes` (List of Number) Expected HTTP status codes
+
+
+<a id="nestedblock--on_destroy--extract"></a>
+### Nested Schema for `on_destroy.extract`
+
+Required:
+
+- `name` (String) Name of the extracted value
+
+Optional:
+
+- `header` (String) Header name to extract from
+- `json_path` (String) JSON path to extract from
+
+
+<a id="nestedblock--on_destroy--header"></a>
+### Nested Schema for `on_destroy.header`
+
+Required:
+
+- `name` (String) Header name
+- `value` (String) Header value (supports ${self.outputs.KEY} and ${self.id} interpolation)
+
+
+<a id="nestedblock--on_destroy--retry"></a>
+### Nested Schema for `on_destroy.retry`
+
+Optional:
+
+- `attempts` (Number) Maximum number of retry attempts
+- `backoff` (String) Backoff strategy: 'fixed', 'linear', or 'exponential'
+- `jitter` (Boolean) Add jitter to retry delays
+- `max_delay_ms` (Number) Maximum delay between retries in milliseconds
+- `min_delay_ms` (Number) Minimum delay between retries in milliseconds
+- `respect_retry_after` (Boolean) Respect Retry-After header if present
+- `retry_on_status_codes` (List of Number) HTTP status codes that should trigger a retry
+
+
+<a id="nestedblock--on_destroy--retry_until"></a>
+### Nested Schema for `on_destroy.retry_until`
+
+Optional:
+
+- `body_regex` (String) Regex pattern that must match the response body
+- `header_equals` (Map of String) Header conditions that must equal specified values
+- `json_path_equals` (Map of String) JSON path conditions that must equal specified values
+- `status_codes` (List of Number) Status codes that satisfy the condition
+
 
 
 <a id="nestedblock--retry"></a>
