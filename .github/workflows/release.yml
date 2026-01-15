@@ -145,15 +145,29 @@ jobs:
       - name: Generate SHASUMS file
         run: |
           cd release-assets
+          echo "Current directory: $(pwd)"
+          echo "Files before SHASUMS generation:"
+          ls -lah
           # Generate SHA256 checksums for all binaries (Terraform Registry requirement)
           # Format: SHA256  filename
-          shasum -a 256 terraform-provider-httpx_* > SHASUMS
+          if ! shasum -a 256 terraform-provider-httpx_* > SHASUMS; then
+            echo "Error: Failed to generate SHASUMS"
+            exit 1
+          fi
+          if [ ! -f SHASUMS ]; then
+            echo "Error: SHASUMS file was not created!"
+            exit 1
+          fi
+          echo ""
           echo "SHASUMS file contents:"
           cat SHASUMS
           echo ""
           echo "Verifying SHASUMS file:"
           wc -l SHASUMS
           echo "Expected 4 lines (one per platform)"
+          echo ""
+          echo "Files after SHASUMS generation:"
+          ls -lah SHASUMS*
       
       - name: Sign release assets
         env:
@@ -166,6 +180,12 @@ jobs:
             exit 0
           fi
           cd release-assets
+          # Verify SHASUMS file exists before signing
+          if [ ! -f SHASUMS ]; then
+            echo "Error: SHASUMS file not found!"
+            ls -lah
+            exit 1
+          fi
           # Sign individual binaries
           # If passphrase is empty, sign without passphrase option
           for file in terraform-provider-httpx_*; do
