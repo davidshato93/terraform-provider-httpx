@@ -44,16 +44,18 @@ jobs:
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           VER=${TAG#v}
-          
-          BIN="terraform-provider-httpx_v${VER}"
+
+          # Build unique, per-platform filename to avoid collisions when artifacts are merged
           if [ "${{ matrix.goos }}" = "windows" ]; then
-            BIN="${BIN}.exe"
+            OUT="terraform-provider-httpx_${{ matrix.goos }}_${{ matrix.goarch }}.exe"
+          else
+            OUT="terraform-provider-httpx_${{ matrix.goos }}_${{ matrix.goarch }}"
           fi
-          
-          go build -ldflags "-X main.version=${VER}" -o "$BIN" .
-          echo "output_file=$BIN" >> $GITHUB_OUTPUT
-          echo "Built: $BIN"
-          ls -la "$BIN" || echo "File not found!"
+
+          go build -ldflags "-X main.version=${VER}" -o "$OUT" .
+          echo "output_file=$OUT" >> $GITHUB_OUTPUT
+          echo "Built: $OUT"
+          ls -la "$OUT" || echo "File not found!"
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -96,7 +98,7 @@ jobs:
           echo "Release assets:"
           ls -lah
           # Verify we have all 4 expected binaries
-          COUNT=$(ls -1 | wc -l)
+          COUNT=$(ls -1 terraform-provider-httpx_* | wc -l)
           if [ "$COUNT" -ne 4 ]; then
             echo "Error: Expected 4 binaries, found $COUNT"
             echo "Files found:"
@@ -152,26 +154,42 @@ jobs:
           cd release-assets
           echo "Creating zip files for Terraform Registry..."
           VER="${{ steps.tag.outputs.ver }}"
-          
+
           # Terraform Registry requires:
-          # - Zip filename (NO leading v): terraform-provider-httpx_0.0.1_linux_amd64.zip
-          # - Binary inside zip (YES leading v): terraform-provider-httpx_v0.0.1
+          # - Zip filename (NO leading v): terraform-provider-httpx_${VER}_<os>_<arch>.zip
+          # - Binary inside zip (YES leading v): terraform-provider-httpx_v${VER}[.exe]
+
+          # Linux
+          cp "terraform-provider-httpx_linux_amd64" "terraform-provider-httpx_v${VER}"
           zip -j "terraform-provider-httpx_${VER}_linux_amd64.zip" "terraform-provider-httpx_v${VER}"
+          rm -f "terraform-provider-httpx_v${VER}"
+
+          # Darwin amd64
+          cp "terraform-provider-httpx_darwin_amd64" "terraform-provider-httpx_v${VER}"
           zip -j "terraform-provider-httpx_${VER}_darwin_amd64.zip" "terraform-provider-httpx_v${VER}"
+          rm -f "terraform-provider-httpx_v${VER}"
+
+          # Darwin arm64
+          cp "terraform-provider-httpx_darwin_arm64" "terraform-provider-httpx_v${VER}"
           zip -j "terraform-provider-httpx_${VER}_darwin_arm64.zip" "terraform-provider-httpx_v${VER}"
+          rm -f "terraform-provider-httpx_v${VER}"
+
+          # Windows amd64
+          cp "terraform-provider-httpx_windows_amd64.exe" "terraform-provider-httpx_v${VER}.exe"
           zip -j "terraform-provider-httpx_${VER}_windows_amd64.zip" "terraform-provider-httpx_v${VER}.exe"
-          
+          rm -f "terraform-provider-httpx_v${VER}.exe"
+
           echo "Created zip files:"
           ls -lh terraform-provider-httpx_${VER}_*.zip
-          
+
           # Verify binary names inside zips
           echo ""
           echo "Verifying binary names inside zips:"
           unzip -l "terraform-provider-httpx_${VER}_linux_amd64.zip" | grep terraform-provider-httpx
-          
+
           # Copy manifest file for Terraform Registry
           cp ../terraform-registry-manifest.json "terraform-provider-httpx_${VER}_manifest.json"
-          
+
           echo ""
           echo "Release-ready files:"
           ls -lh terraform-provider-httpx_${VER}_*
@@ -266,6 +284,16 @@ jobs:
           echo ""
           echo "Release is ready! Files to be uploaded:"
           find . -maxdepth 1 -type f -name "terraform-provider-httpx_${VER}_*" | sort
+
+      - name: Remove raw binaries from release upload
+        run: |
+          cd release-assets
+          VER="${{ steps.tag.outputs.ver }}"
+          rm -f terraform-provider-httpx_linux_amd64 terraform-provider-httpx_darwin_amd64 terraform-provider-httpx_darwin_arm64 terraform-provider-httpx_windows_amd64.exe
+          # Remove any detached signatures for raw binaries if present
+          rm -f terraform-provider-httpx_linux_amd64.asc terraform-provider-httpx_darwin_amd64.asc terraform-provider-httpx_darwin_arm64.asc terraform-provider-httpx_windows_amd64.exe.asc
+          echo "Remaining files to upload:"
+          ls -lh terraform-provider-httpx_${VER}_*
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -305,12 +333,12 @@ jobs:
             }
             ```
           files: |
-            release-assets/terraform-provider-httpx_*_*.zip
-            release-assets/terraform-provider-httpx_*_*.zip.asc
-            release-assets/terraform-provider-httpx_*_manifest.json
-            release-assets/terraform-provider-httpx_*_manifest.json.asc
-            release-assets/terraform-provider-httpx_*_SHA256SUMS
-            release-assets/terraform-provider-httpx_*_SHA256SUMS.sig
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_linux_amd64.zip
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_darwin_amd64.zip
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_darwin_arm64.zip
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_windows_amd64.zip
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_manifest.json
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_SHA256SUMS
+            release-assets/terraform-provider-httpx_${{ steps.tag.outputs.ver }}_SHA256SUMS.sig
           draft: false
           prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
-
