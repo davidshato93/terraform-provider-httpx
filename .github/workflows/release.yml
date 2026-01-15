@@ -149,25 +149,29 @@ jobs:
           echo "Files before SHASUMS generation:"
           ls -lah
           # Generate SHA256 checksums for all binaries (Terraform Registry requirement)
-          # Format: SHA256  filename
-          if ! shasum -a 256 terraform-provider-httpx_* > SHASUMS; then
+          # Terraform Registry requires the filename format: terraform-provider-{NAME}_{VERSION}_SHA256SUMS
+          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+          VERSION="${{ steps.tag.outputs.version }}"
+          SHASUMS_FILE="terraform-provider-httpx_${VERSION}_SHA256SUMS"
+          if ! shasum -a 256 terraform-provider-httpx_* > "$SHASUMS_FILE"; then
             echo "Error: Failed to generate SHASUMS"
             exit 1
           fi
-          if [ ! -f SHASUMS ]; then
+          if [ ! -f "$SHASUMS_FILE" ]; then
             echo "Error: SHASUMS file was not created!"
             exit 1
           fi
           echo ""
+          echo "SHASUMS file: $SHASUMS_FILE"
           echo "SHASUMS file contents:"
-          cat SHASUMS
+          cat "$SHASUMS_FILE"
           echo ""
           echo "Verifying SHASUMS file:"
-          wc -l SHASUMS
+          wc -l "$SHASUMS_FILE"
           echo "Expected 4 lines (one per platform)"
           echo ""
           echo "Files after SHASUMS generation:"
-          ls -lah SHASUMS*
+          ls -lah terraform-provider-httpx_*SHA256SUMS*
       
       - name: Sign release assets
         env:
@@ -181,8 +185,11 @@ jobs:
           fi
           cd release-assets
           # Verify SHASUMS file exists before signing
-          if [ ! -f SHASUMS ]; then
-            echo "Error: SHASUMS file not found!"
+          # Terraform Registry requires: terraform-provider-httpx_{VERSION}_SHA256SUMS
+          VERSION="${{ steps.tag.outputs.version }}"
+          SHASUMS_FILE="terraform-provider-httpx_${VERSION}_SHA256SUMS"
+          if [ ! -f "$SHASUMS_FILE" ]; then
+            echo "Error: SHASUMS file not found at $SHASUMS_FILE!"
             ls -lah
             exit 1
           fi
@@ -197,15 +204,22 @@ jobs:
             fi
           done
           # Sign SHASUMS file (required by Terraform Registry)
+          # Terraform Registry requires: terraform-provider-httpx_{VERSION}_SHA256SUMS.sig
           echo "Signing SHASUMS file..."
           if [ -z "$GPG_PASSPHRASE" ]; then
-            gpg --batch --yes --pinentry-mode loopback --default-key "$GPG_KEY_ID" --armor --detach-sign SHASUMS
+            gpg --batch --yes --pinentry-mode loopback --default-key "$GPG_KEY_ID" --armor --detach-sign "$SHASUMS_FILE"
           else
-            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign SHASUMS
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --default-key "$GPG_KEY_ID" --armor --detach-sign "$SHASUMS_FILE"
+          fi
+          # Terraform Registry expects .sig extension for SHASUMS signature
+          SHASUMS_SIG="${SHASUMS_FILE}.sig"
+          if [ -f "${SHASUMS_FILE}.asc" ]; then
+            mv "${SHASUMS_FILE}.asc" "$SHASUMS_SIG"
+            echo "Renamed ${SHASUMS_FILE}.asc to $SHASUMS_SIG"
           fi
           # Verify SHASUMS signature was created
-          if [ ! -f SHASUMS.asc ]; then
-            echo "Error: SHASUMS.asc was not created!"
+          if [ ! -f "$SHASUMS_SIG" ]; then
+            echo "Error: SHASUMS signature was not created at $SHASUMS_SIG!"
             exit 1
           fi
           echo "Signed files:"
