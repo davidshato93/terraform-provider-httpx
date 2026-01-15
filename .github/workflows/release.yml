@@ -229,11 +229,7 @@ jobs:
             ```bash
             gpg --verify terraform-provider-httpx_<platform>.<ext>.asc terraform-provider-httpx_<platform>.<ext>
             ```
-          files: |
-            release-assets/terraform-provider-httpx_*
-            release-assets/*.asc
-            release-assets/SHASUMS
-            release-assets/SHASUMS.asc
+          files: release-assets/*
           draft: false
           prerelease: ${{ contains(steps.tag.outputs.version, '-') }}
 
